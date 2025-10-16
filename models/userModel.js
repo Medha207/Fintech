@@ -16,12 +16,15 @@ const userSchema = new mongoose.Schema(
         password:{
             type:String,
             required:true
-        }
+        },
+        walletBalance: {
+            type: Number,
+            default: 0, // every user starts with 0 balance
+        },
     }, { timestamps: true }
 
 );
-userSchema.index({ email: 1 }, { unique: true });
-userSchema.index({ username: 1 }, { unique: true });
+
 export const userModel = mongoose.model("User", userSchema);
 
 //export default userModeler;

@@ -26,10 +26,11 @@ const transactionSchema = new mongoose.Schema(
     type: Date,
     default: Date.now,
   },
+  
 
 }, { timestamps: true }
 );
-transactionSchema.index({ user: 1, createdAt: -1 });
+// transactionSchema.index({ user: 1, createdAt: -1 });
 export const transactionModel = mongoose.model("Transaction", transactionSchema);
 
 //export default transactionModel;

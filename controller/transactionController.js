@@ -1,18 +1,43 @@
 
 import { transactionModel } from "../models/transactionModel.js"
-
+import { userModel } from "../models/userModel.js";
 
 // Create new transaction
 export async function createTransaction(req, res) {
   try {
     const { userId, amount, type } = req.body;
+
+    // 1. Create transaction
     const transaction = new transactionModel({ userId, amount, type });
     await transaction.save();
-    res.status(200).json({ message: "Transaction Successful", transaction });
+
+    // 2. Update wallet balance
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+        
+    if (type === "credit") {
+      user.walletBalance += amount;
+    } else if (type === "debit") {
+
+      if (user.walletBalance < amount) {
+        return res.status(400).json({ error: "Insufficient balance" });
+      }
+      user.walletBalance -= amount;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Transaction Successful",
+      transaction,
+      walletBalance: user.walletBalance, // send updated balance
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-};
+}
 
 // Get all transactions
 export async function getTransactions(req, res){

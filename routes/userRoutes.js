@@ -1,11 +1,12 @@
 import { Router } from "express";
-import {createUser,loginUser} from "../controller/userController.js";
+import {createUser,loginUser, getWalletBalance} from "../controller/userController.js";
 import express from "express";
 import { validation } from "../middlewares/validation.js";
-const router_2 = express.Router();
+const route = express.Router();
 
-router_2.post("/register", createUser)
-router_2.post("/login",loginUser)
+route.post("/register", createUser)
+route.post("/login",loginUser)
+route.get("/wallet/:userId", getWalletBalance)
 
 
-export default router_2;
+export default route;

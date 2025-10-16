@@ -1,6 +1,7 @@
 import { userModel } from "../models/userModel.js"
 import {hash, compare} from "bcrypt"
 import jsonwebtoken from "jsonwebtoken"
+import { transactionModel } from "../models/transactionModel.js"
 const jwt = jsonwebtoken
 
 export async function createUser(req, res){
@@ -24,6 +25,7 @@ export async function createUser(req, res){
         res.status(500).json({error:"Something went wrong"})
         
     }
+
     
 }
 
@@ -38,14 +40,11 @@ export async function loginUser(req, res){
             const isPasswordValid = await compare(password, userDetails.password)
             if (!isPasswordValid){
                 return res.status(400).json({error:"Invalid Password"})
-             } const payload = {
-                    username,
-                    email,
-                    password
-                }            
-                const jwtToken = jwt.sign(payload, process.env.JWT_SECRET)
+             }  const payload = {
+                    id: userDetails._id, username: userDetails.username }
+                const jwtToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "2h" });
             
-                res.status(200).json({jwtToken})
+                res.status(200).json({jwtToken , user: { id: userDetails._id, username: userDetails.username, email: userDetails.email } });
             
         }else{
             return res.status(400).json({error:"Please register first"})
@@ -56,3 +55,34 @@ export async function loginUser(req, res){
         res.status(500).json({error:"Something went wrong"})
     }
 }
+
+// export async function getWalletBalance(req, res) {
+//   try {
+//     const transactions = await transactionModel.find({ userId: req.params.userId });
+    
+//     let balance = 0;
+//     transactions.forEach(tx => {
+//       if (tx.type === "credit") balance += tx.amount;
+//       if (tx.type === "debit") balance -= tx.amount;
+//     });
+
+//     res.status(200).json({ balance });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// }
+
+export async function getWalletBalance(req, res) {
+  try {
+    const user = await userModel.findById(req.params.userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({ balance: user.walletBalance });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
