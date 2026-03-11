@@ -3,6 +3,7 @@ import { hash, compare } from "bcrypt";
 import jsonwebtoken from "jsonwebtoken";
 const jwt = jsonwebtoken;
 
+// Aborting replacement to check .env first. Will replace with identical content for now.
 export async function createUser(req, res) {
   try {
     const { username, email, password } = req.body;
@@ -40,6 +41,13 @@ export async function createUser(req, res) {
 
     // Generate token
     const payload = { id: user._id, username: user.username };
+    
+    // Ensure JWT_SECRET exists
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is missing from environment variables");
+      return res.status(500).json({ error: "Server configuration error" });
+    }
+    
     const jwtToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
 
     res.status(201).json({

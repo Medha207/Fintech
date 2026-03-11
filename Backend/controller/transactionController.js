@@ -160,14 +160,40 @@ export async function getTransactionById(req, res) {
 // Update transaction
 export async function updateTransaction(req, res) {
   try {
+    // We need to fetch the original transaction first to revert its balance effect
+    const originalTransaction = await transactionModel.findById(req.params.id);
+    if (!originalTransaction) {
+      return res.status(404).json({ error: "Transaction not found" });
+    }
+
     const transaction = await transactionModel.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
     );
-    if (!transaction) {
-      return res.status(404).json({ error: "Transaction not found" });
+
+    // If amount or type changed, update wallet balance
+    if (req.body.amount !== undefined || req.body.type !== undefined) {
+      const user = await userModel.findById(transaction.userId);
+      if (user) {
+        // Revert old transaction
+        if (originalTransaction.type === "credit") {
+          user.walletBalance -= originalTransaction.amount;
+        } else if (originalTransaction.type === "debit") {
+          user.walletBalance += originalTransaction.amount;
+        }
+
+        // Apply new transaction
+        if (transaction.type === "credit") {
+          user.walletBalance += transaction.amount;
+        } else if (transaction.type === "debit") {
+          user.walletBalance -= transaction.amount;
+        }
+
+        await user.save();
+      }
     }
+
     res.status(200).json({ transaction });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -181,6 +207,18 @@ export async function deleteTransaction(req, res) {
     if (!transaction) {
       return res.status(404).json({ error: "Transaction not found" });
     }
+
+    // Recover wallet balance
+    const user = await userModel.findById(transaction.userId);
+    if (user) {
+      if (transaction.type === "credit") {
+        user.walletBalance -= transaction.amount;
+      } else if (transaction.type === "debit") {
+        user.walletBalance += transaction.amount;
+      }
+      await user.save();
+    }
+
     res.status(200).json({ message: "Transaction deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });

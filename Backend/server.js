@@ -11,7 +11,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-    origin: ["http://localhost:5173", "http://localhost:3000"],
+    origin: "*", // Allow all origins for now so the deployed frontend can connect. You can restrict this to your Vercel URL later.
     credentials: true
 }));
 app.use(morgan("dev"));
